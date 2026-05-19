@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workspace — финал</title>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+  <script src="demo-data.js"></script>
+  <style>
+    :root {
+      --bg-page: #eef2f5;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #334155;
+      --border-light: #e2e8f0;
+      --border-med: #cbd5e1;
+      --hover-bg: #f8fafc;
+      --selected-bg: #e2e8f0;
+      --linked-bg: #e8f5e9;
+      --chain-bg: #fff8e1;
+      --active-filter-bg: #334155;
+      --active-filter-text: #ffffff;
+      --link-source-bg: #2e7d32;
+      --link-source-hover: #1b5e20;
+      --link-linked-bg: #c62828;
+      --link-linked-hover: #b71c1c;
+      --link-neutral-bg: #64748b;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      --transition: all 0.12s ease;
+      --sidebar-width: 260px;
+      --col-min-width: 260px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'SF Pro Text', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      font-size: 13px;
+      line-height: 1.4;
+      color: var(--text-primary);
+      background: var(--bg-page);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: hidden;
+    }
+
+    /* ШАПКА */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      padding: 10px 24px;
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      z-index: 20;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .logo {
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .toggle-sidebar-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 4px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .toggle-sidebar-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .filters {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 4px;
+      background: var(--bg-card);
+      border-radius: 24px;
+      padding: 2px;
+      border: 1px solid var(--border-light);
+    }
+
+    .filter-btn {
+      background: transparent;
+      border: none;
+      font-size: 12px;
+      padding: 4px 12px;
+      border-radius: 24px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .filter-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .filter-btn.active {
+      background: var(--active-filter-bg);
+      color: var(--active-filter-text);
+    }
+
+    .filter-all {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 24px;
+      padding: 4px 12px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .filter-all:hover {
+      background: var(--hover-bg);
+    }
+
+    .filter-all.active {
+      background: var(--active-filter-bg);
+      color: white;
+      border-color: var(--active-filter-bg);
+    }
+
+    /* ОСНОВНАЯ ОБЛАСТЬ */
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      padding: 12px 12px 12px 12px;
+      gap: 12px;
+    }
+
+    /* САЙДБАР */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-card);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      transition: margin 0.2s ease, transform 0.2s ease;
+      flex-shrink: 0;
+      z-index: 10;
+      overflow-y: auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .sidebar.hidden {
+      margin-left: calc(-1 * var(--sidebar-width));
+      transform: translateX(-100%);
+    }
+
+    .sidebar-content {
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .sidebar-section {
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 20px;
+    }
+
+    .sidebar-section:last-child {
+      border-bottom: none;
+    }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .sidebar-field {
+      margin-bottom: 12px;
+    }
+
+    .sidebar-field input {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    .sidebar-field input:focus {
+      outline: none;
+      border-color: var(--border-med);
+      background: var(--hover-bg);
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+
+    .sidebar .action-btn:hover {
+      background: transparent;
+      border-color: var(--border-med);
+    }
+
+    .confirm-buttons {
+      display: flex;
+      gap: 8px;
+      margin-left: 8px;
+    }
+
+    .confirm-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .confirm-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .tag-palette {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tag-palette-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 24px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: all 0.1s;
+    }
+
+    .tag-palette-btn.active {
+      background: var(--active-filter-bg);
+      border-color: var(--active-filter-bg);
+      color: white;
+    }
+
+    .col-width-control {
+      margin-top: 16px;
+    }
+
+    .col-width-control input {
+      width: 100%;
+    }
+
+    /* КОЛОНКИ */
+    .columns-container {
+      flex: 1;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      background: transparent;
+      scrollbar-width: none;
+    }
+
+    .columns {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      height: 100%;
+      padding-right: 12px;
+    }
+
+    .col {
+      flex: 1 0 var(--col-min-width);
+      min-width: var(--col-min-width);
+      background: var(--bg-card);
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      scroll-snap-align: start;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s;
+    }
+
+    .col:hover {
+      box-shadow: var(--shadow-md);
+    }
+
+    .col-header {
+      padding: 14px 16px;
+      background: transparent;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: none;
+    }
+
+    .col-title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .col-title input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 4px 8px;
+      font: inherit;
+      width: 100%;
+      display: none;
+    }
+
+    .col-title.editing span {
+      display: none;
+    }
+
+    .col-title.editing input {
+      display: block;
+    }
+
+    .col-actions-header {
+      display: flex;
+      gap: 8px;
+    }
+
+    .c-btn {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text-secondary);
+      padding: 4px;
+      border-radius: 6px;
+      transition: var(--transition);
+    }
+
+    .c-btn:hover {
+      background: var(--hover-bg);
+    }
+
+    .tree {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: auto;
+      padding: 12px 8px 12px 4px;
+    }
+
+    .node {
+      user-select: none;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      margin: 2px 4px;
+      border-radius: 10px;
+      cursor: default;
+      white-space: nowrap;
+      transition: background 0.1s;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .row:hover {
+      background: var(--hover-bg);
+    }
+
+    .folder-row .label .text {
+      font-weight: 500;
+    }
+
+    .row.selected {
+      background: var(--selected-bg);
+    }
+
+    .row.linked {
+      background: var(--linked-bg);
+    }
+
+    .row.chain {
+      background: var(--chain-bg);
+    }
+
+    .handle {
+      width: 20px;
+      font-size: 14px;
+      color: #8b9eb0;
+      cursor: grab;
+      text-align: center;
+      flex-shrink: 0;
+      opacity: 0.4;
+    }
+
+    .row:hover .handle {
+      opacity: 0.8;
+    }
+
+    .toggle {
+      width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+
+    .toggle:hover {
+      background: var(--border-light);
+    }
+
+    .toggle.open::before {
+      content: "▾";
+    }
+
+    .toggle.closed::before {
+      content: "▸";
+    }
+
+    .toggle.leaf {
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .link-icon {
+      width: 13px;
+      height: 13px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 600;
+      background: transparent;
+      border-radius: 50%;
+      transition: background 0.1s, transform 0.1s;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .row:hover .link-icon {
+      background: var(--border-light);
+      transform: scale(1.05);
+    }
+
+    .link-icon.source-active {
+      background: var(--link-source-bg);
+      color: white;
+    }
+
+    .link-icon.source-active:hover {
+      background: var(--link-source-hover);
+    }
+
+    .link-icon.linked-active {
+      background: var(--link-linked-bg);
+      color: white;
+    }
+
+    .link-icon.linked-active:hover {
+      background: var(--link-linked-hover);
+    }
+
+    .link-icon.neutral-active {
+      background: var(--link-neutral-bg);
+      color: white;
+    }
+
+    .link-icon.neutral-active:hover {
+      background: #475569;
+    }
+
+    .label {
+      flex: 1;
+      word-break: break-word;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .label .text {
+      display: inline-block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+
+    .label input {
+      background: white;
+      border: none;
+      border-radius: 8px;
+      font: inherit;
+      padding: 2px 6px;
+      margin: -2px 0;
+      width: auto;
+      min-width: 120px;
+      display: none;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+      transition: none;
+    }
+
+    .label.editing .text {
+      display: none;
+    }
+
+    .label.editing input {
+      display: inline-block;
+    }
+
+    .tags {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+      margin-left: 6px;
+    }
+
+    .tag-icon {
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--text-secondary);
+      opacity: 0.5;
+      transition: opacity 0.1s;
+    }
+
+    .row:hover .tag-icon {
+      opacity: 1;
+    }
+
+    .children {
+      display: none;
+    }
+
+    .children.open {
+      display: block;
+    }
+
+    .col-footer {
+      border-top: none;
+      padding: 10px 14px;
+      background: transparent;
+      display: flex;
+      gap: 12px;
+    }
+
+    .footer-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 30px;
+      padding: 4px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: 0.1s;
+    }
+
+    .footer-btn:hover {
+      background: var(--hover-bg);
+      border-color: var(--border-med);
+    }
+
+    .sortable-ghost {
+      opacity: 0.3;
+      background: var(--border-light) !important;
+      border-radius: 10px;
+    }
+
+    .sortable-drag {
+      opacity: 0.9;
+      box-shadow: var(--shadow-md);
+    }
+
+    .drop-active {
+      background: var(--hover-bg);
+      border-radius: 10px;
+    }
+
+    .add-col {
+      background: var(--bg-card);
+      border: 1px dashed var(--border-med);
+      border-radius: 12px;
+      padding: 0 24px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      scroll-snap-align: start;
+      transition: 0.1s;
+      flex: 1 0 var(--col-min-width);
+      min-width: var(--col-min-width);
+      justify-content: center;
+    }
+
+    .add-col:hover {
+      background: var(--hover-bg);
+      border-color: var(--text-secondary);
+    }
+
+    .tree::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+
+    .tree::-webkit-scrollbar-track {
+      background: #eef2f5;
+      border-radius: 4px;
+    }
+
+    .tree::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .sidebar-field textarea {
+      width: 100%;
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      transition: var(--transition);
+      resize: vertical;
+      min-height: 60px;
+      line-height: 1.4;
+    }
+    .sidebar-field textarea:focus {
+      outline: none;
+      border-color: var(--border-med);
+      background: var(--hover-bg);
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .header-btn {
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .header-btn:hover {
+      background: var(--hover-bg);
+    }
+  </style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo">Workspace</div>
+    <button class="toggle-sidebar-btn" id="toggleSidebarBtn">◀ Скрыть</button>
+  </div>
+  <div class="filters" id="filters">
+    <button class="filter-all active" data-filter-all="all">Все</button>
+    <div class="filter-group">
+      <button class="filter-btn" data-filter-type="pos" data-tag="Быстро">Быстро</button>
+      <button class="filter-btn" data-filter-type="neg" data-tag="Быстро">Медленно</button>
+    </div>
+    <div class="filter-group">
+      <button class="filter-btn" data-filter-type="pos" data-tag="Дёшево">Дёшево</button>
+      <button class="filter-btn" data-filter-type="neg" data-tag="Дёшево">Дорого</button>
+    </div>
+    <div class="filter-group">
+      <button class="filter-btn" data-filter-type="pos" data-tag="Болит">Болит</button>
+      <button class="filter-btn" data-filter-type="neg" data-tag="Болит">Терпит</button>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="header-btn" id="exportBtn">📥 Скачать</button>
+    <button class="header-btn" id="importBtn">📤 Загрузить</button>
+  </div>
+</header>
+
+<div class="main-layout" id="mainLayout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+      <div class="sidebar-section" id="createSection" style="display: none;">
+        <div class="sidebar-label">СОЗДАТЬ ВНУТРИ</div>
+        <div class="action-buttons">
+          <button class="action-btn" id="createFolderBtn">+ Раздел</button>
+          <button class="action-btn" id="createFileBtn">+ Юнит</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">РЕДАКТИРОВАНИЕ</div>
+        <div class="sidebar-field">
+          <input type="text" id="selectedTitle" placeholder="Название">
+        </div>
+        <div class="sidebar-field">
+          <textarea id="selectedDesc" placeholder="Комментарий" rows="2"></textarea>
+        </div>
+        <div class="tag-palette" id="tagPalette"></div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">УПРАВЛЕНИЕ</div>
+        <div class="action-buttons" id="actionButtons">
+          <button class="action-btn" id="deleteBtn">Удалить</button>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">ШИРИНА КОЛОНОК</div>
+        <div class="col-width-control">
+          <input type="range" id="colWidthSlider" min="0" max="100" step="1" value="30">
+          <div style="display: flex; justify-content: space-between; margin-top: 4px;">
+            <span>Узко</span><span id="colWidthValue">30%</span><span>Широко</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="columns-container" id="columnsContainer">
+    <div class="columns" id="columns">
+      <button class="add-col" id="addCol">+ Добавить колонку</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    // -------- Глобальные переменные ----------
+    let LINKS = {};                // { id: [linkedIds] }
+    let selectedItem = null;      // объект item
+    let selectedRowElem = null;
+    let deleteConfirmMode = false;
+    let linkingMode = false;
+    let linkingSourceId = null;
+
+    const availableTags = ['Быстро', 'Дёшево', 'Болит'];
+    const tagIconMap = { 'Быстро': '🗲', 'Дёшево': '₽', 'Болит': '❤︎' };
+    const tagDisplayMap = { 'Быстро': 'Быстро', 'Дёшево': 'Дёшево', 'Болит': 'Болит' };
+
+    let posFilters = new Set();
+    let negFilters = new Set();
+
+    // DOM элементы
+    const container = document.getElementById('columns');
+    const addBtn = document.getElementById('addCol');
+    const selectedTitleInput = document.getElementById('selectedTitle');
+    const selectedDescInput = document.getElementById('selectedDesc');
+    const actionButtonsDiv = document.getElementById('actionButtons');
+    const deleteBtn = document.getElementById('deleteBtn');
+    const tagPaletteDiv = document.getElementById('tagPalette');
+    const filtersContainer = document.getElementById('filters');
+    const sidebar = document.getElementById('sidebar');
+    const toggleSidebarBtn = document.getElementById('toggleSidebarBtn');
+    const colWidthSlider = document.getElementById('colWidthSlider');
+    const colWidthValue = document.getElementById('colWidthValue');
+    const createFolderBtn = document.getElementById('createFolderBtn');
+    const createFileBtn = document.getElementById('createFileBtn');
+    const createSection = document.getElementById('createSection');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+
+    // ---------- Вспомогательные функции для связей ----------
+    function addLink(fromId, toId) {
+      if (!LINKS[fromId]) LINKS[fromId] = [];
+      if (!LINKS[toId]) LINKS[toId] = [];
+      if (!LINKS[fromId].includes(toId)) {
+        LINKS[fromId].push(toId);
+        LINKS[toId].push(fromId);
+      }
+    }
+    function removeLink(fromId, toId) {
+      if (LINKS[fromId]) LINKS[fromId] = LINKS[fromId].filter(id => id !== toId);
+      if (LINKS[toId]) LINKS[toId] = LINKS[toId].filter(id => id !== fromId);
+    }
+    function hasLink(fromId, toId) {
+      return LINKS[fromId] && LINKS[fromId].includes(toId);
+    }
+    function getDirectLinkedIds(id) {
+      return LINKS[id] ? [...LINKS[id]] : [];
+    }
+    function getAllLinkedIds(id, visited = new Set(), distance = 0, result = []) {
+      if (!LINKS[id]) return [];
+      for (let linkedId of LINKS[id]) {
+        if (!visited.has(linkedId)) {
+          visited.add(linkedId);
+          result.push({ id: linkedId, dist: distance + 1 });
+          getAllLinkedIds(linkedId, visited, distance + 1, result);
+        }
+      }
+      return result;
+    }
+    function removeAllLinksForId(id) {
+      if (LINKS[id]) {
+        const targets = [...LINKS[id]];
+        for (let target of targets) removeLink(id, target);
+      }
+      delete LINKS[id];
+    }
+
+    // ---------- Сохранение / загрузка состояния (localStorage + JSON) ----------
+    function serializeState() {
+      const columns = [];
+      document.querySelectorAll('.col').forEach(colEl => {
+        const titleSpan = colEl.querySelector('.col-title span');
+        const title = titleSpan ? titleSpan.textContent : 'Колонка';
+        const treeRoot = colEl.querySelector('.tree');
+        const items = treeRoot ? serializeNodes(Array.from(treeRoot.children).filter(c => c.classList && c.classList.contains('node'))) : [];
+        columns.push({ title, items });
+      });
+      return { columns, links: LINKS, version: 1 };
+    }
+
+    function serializeNodes(nodes) {
+      return nodes.map(node => {
+        const item = node._item;
+        const childrenContainer = node.querySelector(':scope > .children');
+        const childrenNodes = childrenContainer ? Array.from(childrenContainer.children).filter(c => c.classList && c.classList.contains('node')) : [];
+        return {
+          id: item.id,
+          label: item.label,
+          type: item.type,
+          description: item.description || '',
+          tags: item.tags ? [...item.tags] : [],
+          children: item.type === 'folder' ? serializeNodes(childrenNodes) : undefined
+        };
+      });
+    }
+
+    function saveStateToLocalStorage() {
+      const state = serializeState();
+      localStorage.setItem('workspace_data', JSON.stringify(state));
+    }
+
+    function loadStateFromLocalStorage() {
+      const raw = localStorage.getItem('workspace_data');
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    }
+
+    // Полная перестройка интерфейса из состояния
+    function rebuildFromState(state) {
+      // Очищаем все колонки, кроме addBtn
+      const cols = document.querySelectorAll('.col');
+      cols.forEach(col => col.remove());
+      // Восстанавливаем колонки
+      if (state.columns && state.columns.length) {
+        state.columns.forEach(colData => {
+          buildColumn(colData.title, colData.items || []);
+        });
+      } else {
+        buildColumn('Новая колонка', []);
+      }
+      // Восстанавливаем связи
+      LINKS = state.links ? JSON.parse(JSON.stringify(state.links)) : {};
+      // Сбрасываем выделение
+      clearSelection();
+      // Применяем фильтры
+      applyFilter();
+      updateAllDepths();
+      // Обновляем сайдбар (скрываем палитру тегов и пр.)
+      updateSidebarForSelection();
+    }
+
+    // Инициализация: либо из localStorage, либо из DEMO_DATA + INITIAL_LINKS
+    function initApp() {
+      const saved = loadStateFromLocalStorage();
+      if (saved && saved.columns) {
+        rebuildFromState(saved);
+      } else {
+        // Используем демо-данные
+        if (typeof DEMO_DATA !== 'undefined' && Array.isArray(DEMO_DATA)) {
+          DEMO_DATA.forEach(colData => buildColumn(colData.title, colData.items || []));
+        } else {
+          buildColumn('Пример', []);
+        }
+        // Применяем начальные связи из INITIAL_LINKS (глобальный из demo-data.js)
+        if (typeof INITIAL_LINKS !== 'undefined') {
+          for (let fromId in INITIAL_LINKS) {
+            INITIAL_LINKS[fromId].forEach(toId => addLink(fromId, toId));
+          }
+        }
+        saveStateToLocalStorage();
+      }
+      // После построения обновляем отступы
+      updateAllDepths();
+      applyFilter();
+      // Подписка на изменение ширины колонок
+      const percent = colWidthSlider.value;
+      updateColWidth(parseInt(percent));
+    }
+
+    // ---------- UI построение ----------
+    function buildItem(item, depth) {
+      const isFolder = (item.type === 'folder');
+      const node = document.createElement('div');
+      node.className = 'node';
+      node.dataset.id = item.id;
+      node._item = item;
+
+      const row = document.createElement('div');
+      row.className = 'row';
+      if (isFolder) row.classList.add('folder-row');
+      row.setAttribute('data-id', item.id);
+
+      const handleSpan = document.createElement('span');
+      handleSpan.className = 'handle';
+      handleSpan.textContent = '⋮';
+      row.appendChild(handleSpan);
+
+      const toggleSpan = document.createElement('span');
+      toggleSpan.className = `toggle ${isFolder ? 'closed' : 'leaf'}`;
+      row.appendChild(toggleSpan);
+
+      if (!isFolder) {
+        const linkIcon = document.createElement('span');
+        linkIcon.className = 'link-icon';
+        linkIcon.textContent = '↵';
+        linkIcon.setAttribute('data-id', item.id);
+        linkIcon.addEventListener('mouseenter', (e) => {
+          e.stopPropagation();
+          if (linkingMode) return;
+          const direct = getDirectLinkedIds(item.id);
+          highlightRowsByIds(direct, 'linked');
+        });
+        linkIcon.addEventListener('mouseleave', (e) => {
+          if (linkingMode) return;
+          clearAllHighlights();
+          if (selectedItem && selectedItem.id === item.id && selectedItem.type === 'file') highlightConnections(selectedItem.id);
+          else if (selectedItem && selectedItem.type === 'file') highlightConnections(selectedItem.id);
+        });
+        linkIcon.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (linkingMode) {
+            if (linkingSourceId === item.id) exitLinkingMode();
+            else toggleLink(linkingSourceId, item.id);
+          } else {
+            startLinking(item.id);
+          }
+        });
+        row.appendChild(linkIcon);
+      }
+
+      const labelSpan = document.createElement('span');
+      labelSpan.className = 'label';
+      const textSpan = document.createElement('span');
+      textSpan.className = 'text';
+      textSpan.textContent = item.label;
+      const editInput = document.createElement('input');
+      editInput.value = item.label;
+      labelSpan.appendChild(textSpan);
+      labelSpan.appendChild(editInput);
+      row.appendChild(labelSpan);
+
+      if (!isFolder && item.tags && item.tags.length) {
+        const tagsContainer = document.createElement('span');
+        tagsContainer.className = 'tags';
+        item.tags.slice().sort((a,b)=>availableTags.indexOf(a)-availableTags.indexOf(b)).forEach(tag => {
+          const span = document.createElement('span');
+          span.className = 'tag-icon';
+          span.textContent = tagIconMap[tag];
+          tagsContainer.appendChild(span);
+        });
+        row.appendChild(tagsContainer);
+      }
+      node.appendChild(row);
+
+      function finishLabelEdit() {
+        const newVal = editInput.value.trim();
+        if (newVal) {
+          textSpan.textContent = newVal;
+          item.label = newVal;
+        } else editInput.value = item.label;
+        labelSpan.classList.remove('editing');
+        if (selectedItem === item && selectedRowElem === row) selectedTitleInput.value = item.label;
+        saveStateToLocalStorage();
+      }
+      labelSpan.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        labelSpan.classList.add('editing');
+        editInput.focus();
+        editInput.select();
+      });
+      editInput.addEventListener('blur', finishLabelEdit);
+      editInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') finishLabelEdit();
+        if (e.key === 'Escape') { editInput.value = item.label; finishLabelEdit(); }
+      });
+      row.addEventListener('click', (e) => {
+        if (e.target.closest('.toggle') || e.target.closest('.handle') || e.target.closest('.link-icon') || e.target.closest('.tag-icon') || e.target.closest('input')) return;
+        if (linkingMode) return;
+        if (selectedItem === item) clearSelection();
+        else selectItem(item, node);
+      });
+
+      if (isFolder) {
+        const childrenContainer = document.createElement('div');
+        childrenContainer.className = 'children drop-zone';
+        if (item.children && item.children.length) {
+          item.children.forEach(child => childrenContainer.appendChild(buildItem(child, depth + 1)));
+        }
+        node.appendChild(childrenContainer);
+        initSortable(childrenContainer);
+        toggleSpan.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpen = toggleSpan.classList.contains('open');
+          if (isOpen) {
+            toggleSpan.classList.remove('open');
+            toggleSpan.classList.add('closed');
+            childrenContainer.classList.remove('open');
+          } else {
+            toggleSpan.classList.add('open');
+            toggleSpan.classList.remove('closed');
+            childrenContainer.classList.add('open');
+          }
+        });
+        if (depth === 0) {
+          toggleSpan.classList.add('open');
+          childrenContainer.classList.add('open');
+        } else {
+          toggleSpan.classList.add('closed');
+        }
+      }
+      node.style.paddingLeft = `${depth * 20}px`;
+      return node;
+    }
+
+    function buildColumn(title = 'Новая колонка', items = []) {
+      const col = document.createElement('div');
+      col.className = 'col';
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'col-header';
+      headerDiv.innerHTML = `
+        <div class="col-title"><span>${escapeHtml(title)}</span><input type="text" value="${escapeHtml(title)}"></div>
+        <div class="col-actions-header"><button class="c-btn del-btn" title="Удалить колонку">×</button></div>
+      `;
+      const treeDiv = document.createElement('div');
+      treeDiv.className = 'tree drop-zone';
+      const footerDiv = document.createElement('div');
+      footerDiv.className = 'col-footer';
+      footerDiv.innerHTML = `<button class="footer-btn add-folder">+ Раздел</button><button class="footer-btn add-file">+ Юнит</button>`;
+
+      col.appendChild(headerDiv);
+      col.appendChild(treeDiv);
+      col.appendChild(footerDiv);
+
+      items.forEach(item => treeDiv.appendChild(buildItem(item, 0)));
+      initSortable(treeDiv);
+
+      footerDiv.querySelector('.add-folder').addEventListener('click', () => createItem('folder', col));
+      footerDiv.querySelector('.add-file').addEventListener('click', () => createItem('file', col));
+      headerDiv.querySelector('.del-btn').addEventListener('click', () => {
+        if (treeDiv.querySelector('.node')) { alert('Сначала удалите все элементы внутри.'); return; }
+        if (document.querySelectorAll('.col').length > 1) col.remove();
+        saveStateToLocalStorage();
+      });
+      const titleWrap = headerDiv.querySelector('.col-title');
+      const titleSpan = titleWrap.querySelector('span');
+      const titleInput = titleWrap.querySelector('input');
+      titleWrap.addEventListener('dblclick', () => {
+        titleWrap.classList.add('editing');
+        titleInput.value = titleSpan.textContent;
+        titleInput.focus();
+        titleInput.select();
+      });
+      titleInput.addEventListener('blur', () => {
+        if (titleInput.value.trim()) titleSpan.textContent = titleInput.value;
+        titleWrap.classList.remove('editing');
+        saveStateToLocalStorage();
+      });
+      titleInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') titleInput.blur();
+        if (e.key === 'Escape') { titleInput.value = titleSpan.textContent; titleInput.blur(); }
+      });
+      container.insertBefore(col, addBtn);
+      return col;
+    }
+
+    function createItem(type, targetCol = null) {
+      let parentContainer = null;
+      if (selectedItem && selectedItem.type === 'folder' && selectedRowElem) {
+        const folderNode = selectedRowElem.closest('.node');
+        if (folderNode) parentContainer = folderNode.querySelector('.children');
+      }
+      if (!parentContainer && targetCol) parentContainer = targetCol.querySelector('.tree');
+      if (!parentContainer) {
+        const firstCol = document.querySelector('.col');
+        if (firstCol) parentContainer = firstCol.querySelector('.tree');
+        else return;
+      }
+      const newId = Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+      const newItem = {
+        id: newId,
+        label: type === 'folder' ? 'Раздел...' : 'Юнит...',
+        type: type,
+        description: '',
+        tags: type === 'file' ? [] : undefined,
+        children: type === 'folder' ? [] : undefined
+      };
+      const newNode = buildItem(newItem, 0);
+      parentContainer.appendChild(newNode);
+      initSortable(parentContainer);
+      updateAllDepths();
+      applyFilter();
+      const row = newNode.querySelector('.row');
+      const labelSpan = row.querySelector('.label');
+      const editInput = labelSpan.querySelector('input');
+      labelSpan.classList.add('editing');
+      editInput.focus();
+      editInput.select();
+      selectItem(newItem, newNode);
+      saveStateToLocalStorage();
+    }
+
+    function performDelete() {
+      if (!selectedItem || !selectedRowElem) return;
+      if (selectedItem.type === 'file') removeAllLinksForId(selectedItem.id);
+      else if (selectedItem.type === 'folder') {
+        function removeLinksRecursive(item) {
+          if (item.type === 'file') removeAllLinksForId(item.id);
+          if (item.children) item.children.forEach(removeLinksRecursive);
+        }
+        removeLinksRecursive(selectedItem);
+      }
+      const nodeToRemove = selectedRowElem.closest('.node');
+      if (nodeToRemove) nodeToRemove.remove();
+      selectedItem = null;
+      selectedRowElem = null;
+      selectedTitleInput.value = '';
+      selectedDescInput.value = '';
+      deleteConfirmMode = false;
+      updateSidebarForSelection();
+      applyFilter();
+      if (linkingMode) exitLinkingMode();
+      saveStateToLocalStorage();
+    }
+
+    // ---------- Функции выделения и связей ----------
+    function clearSelection() {
+      document.querySelectorAll('.node.selected-group').forEach(n => n.classList.remove('selected-group'));
+      document.querySelectorAll('.row.selected').forEach(r => r.classList.remove('selected'));
+      clearAllHighlights();
+      selectedItem = null;
+      selectedRowElem = null;
+      selectedTitleInput.value = '';
+      selectedDescInput.value = '';
+      deleteConfirmMode = false;
+      updateSidebarForSelection();
+    }
+    function selectItem(item, nodeElement) {
+      clearSelection();
+      if (item.type === 'folder') {
+        nodeElement.classList.add('selected-group');
+        const row = nodeElement.querySelector('.row');
+        if (row) { row.classList.add('selected'); selectedRowElem = row; }
+      } else {
+        const row = nodeElement.querySelector('.row');
+        if (row) { row.classList.add('selected'); selectedRowElem = row; highlightConnections(item.id); }
+      }
+      selectedItem = item;
+      selectedTitleInput.value = item.label || '';
+      selectedDescInput.value = item.description || '';
+      deleteConfirmMode = false;
+      updateSidebarForSelection();
+    }
+    function updateSidebarForSelection() {
+      tagPaletteDiv.innerHTML = '';
+      if (selectedItem && selectedItem.type === 'folder') createSection.style.display = 'block';
+      else createSection.style.display = 'none';
+      if (!selectedItem) { deleteBtn.style.display = 'none'; return; }
+      deleteBtn.style.display = 'inline-flex';
+      if (deleteConfirmMode) {
+        const confirmDiv = document.createElement('div');
+        confirmDiv.className = 'confirm-buttons';
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'Да';
+        yesBtn.className = 'confirm-btn';
+        yesBtn.addEventListener('click', () => performDelete());
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'Нет';
+        noBtn.className = 'confirm-btn';
+        noBtn.addEventListener('click', () => { deleteConfirmMode = false; updateSidebarForSelection(); });
+        confirmDiv.appendChild(yesBtn);
+        confirmDiv.appendChild(noBtn);
+        actionButtonsDiv.innerHTML = '';
+        actionButtonsDiv.appendChild(deleteBtn);
+        actionButtonsDiv.appendChild(confirmDiv);
+      } else {
+        actionButtonsDiv.innerHTML = '';
+        actionButtonsDiv.appendChild(deleteBtn);
+      }
+      if (selectedItem.type !== 'folder') {
+        for (let tag of availableTags) {
+          const tagBtn = document.createElement('button');
+          tagBtn.className = 'tag-palette-btn';
+          if (selectedItem.tags && selectedItem.tags.includes(tag)) tagBtn.classList.add('active');
+          tagBtn.textContent = tagDisplayMap[tag];
+          tagBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleTagForSelected(tag);
+            updateSidebarForSelection();
+          });
+          tagPaletteDiv.appendChild(tagBtn);
+        }
+      }
+    }
+    function toggleTagForSelected(tag) {
+      if (!selectedItem || selectedItem.type === 'folder') return;
+      if (!selectedItem.tags) selectedItem.tags = [];
+      const idx = selectedItem.tags.indexOf(tag);
+      if (idx === -1) selectedItem.tags.push(tag);
+      else selectedItem.tags.splice(idx, 1);
+      selectedItem.tags.sort((a,b)=>availableTags.indexOf(a)-availableTags.indexOf(b));
+      if (selectedRowElem) {
+        const tagsContainer = selectedRowElem.querySelector('.tags');
+        if (tagsContainer) {
+          tagsContainer.innerHTML = '';
+          selectedItem.tags.forEach(t => {
+            const span = document.createElement('span');
+            span.className = 'tag-icon';
+            span.textContent = tagIconMap[t];
+            tagsContainer.appendChild(span);
+          });
+        }
+      }
+      applyFilter();
+      saveStateToLocalStorage();
+    }
+    function toggleLink(sourceId, targetId) {
+      if (sourceId === targetId) return;
+      if (hasLink(sourceId, targetId)) removeLink(sourceId, targetId);
+      else addLink(sourceId, targetId);
+      if (linkingMode && linkingSourceId === sourceId) {
+        document.querySelectorAll('.link-icon').forEach(icon => {
+          const id = icon.dataset.id;
+          if (id === sourceId) return;
+          if (hasLink(sourceId, id)) { icon.classList.add('linked-active'); icon.textContent = '✕'; }
+          else { icon.classList.add('neutral-active'); icon.textContent = '+'; }
+        });
+        clearAllHighlights();
+        const linkedIds = getDirectLinkedIds(sourceId);
+        highlightRowsByIds(linkedIds, 'linked');
+      } else {
+        clearAllHighlights();
+        if (selectedItem && selectedItem.type === 'file') highlightConnections(selectedItem.id);
+      }
+      saveStateToLocalStorage();
+    }
+    function startLinking(sourceId) {
+      if (linkingMode) exitLinkingMode();
+      linkingMode = true;
+      linkingSourceId = sourceId;
+      document.querySelectorAll('.link-icon').forEach(icon => {
+        const id = icon.dataset.id;
+        if (id === sourceId) { icon.classList.add('source-active'); icon.textContent = '✓'; }
+        else if (hasLink(sourceId, id)) { icon.classList.add('linked-active'); icon.textContent = '✕'; }
+        else { icon.classList.add('neutral-active'); icon.textContent = '+'; }
+      });
+      let panel = document.getElementById('linkingPanel');
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'linkingPanel';
+        panel.className = 'sidebar-section';
+        panel.style.marginTop = '16px';
+        panel.innerHTML = `<div class="sidebar-label">РЕЖИМ СВЯЗИ</div><div style="font-size:12px; margin-bottom:10px;">Кликните на иконку другого юнита</div><div class="action-buttons"><button class="action-btn" id="cancelLinkingBtn">Отменить</button></div>`;
+        const actionsDiv = document.querySelector('#actionButtons').closest('.sidebar-section');
+        actionsDiv.insertAdjacentElement('afterend', panel);
+        document.getElementById('cancelLinkingBtn').addEventListener('click', exitLinkingMode);
+      }
+      clearAllHighlights();
+      const linkedIds = getDirectLinkedIds(sourceId);
+      highlightRowsByIds(linkedIds, 'linked');
+    }
+    function exitLinkingMode() {
+      linkingMode = false;
+      linkingSourceId = null;
+      document.querySelectorAll('.link-icon').forEach(icon => {
+        icon.classList.remove('source-active', 'linked-active', 'neutral-active');
+        icon.textContent = '↵';
+      });
+      const panel = document.getElementById('linkingPanel');
+      if (panel) panel.remove();
+      clearAllHighlights();
+      if (selectedItem && selectedItem.type === 'file') highlightConnections(selectedItem.id);
+    }
+    function clearAllHighlights() {
+      document.querySelectorAll('.row.linked, .row.chain, .row.selected').forEach(row => {
+        if (row.classList.contains('selected')) return;
+        row.classList.remove('linked', 'chain');
+      });
+    }
+    function highlightRowsByIds(ids, className) {
+      ids.forEach(id => {
+        const row = document.querySelector(`.row[data-id="${id}"]`);
+        if (row && !row.classList.contains('selected')) row.classList.add(className);
+      });
+    }
+    function highlightConnections(selectedId) {
+      clearAllHighlights();
+      const direct = getDirectLinkedIds(selectedId);
+      const allChain = getAllLinkedIds(selectedId, new Set(), 0, []);
+      const chainIds = allChain.map(item => item.id);
+      highlightRowsByIds(direct, 'linked');
+      const indirectIds = chainIds.filter(id => !direct.includes(id));
+      highlightRowsByIds(indirectIds, 'chain');
+    }
+
+    // ---------- Фильтрация ----------
+    function matchesFilters(item) {
+      if (item.type === 'folder') return true;
+      const tags = item.tags || [];
+      for (let p of posFilters) if (!tags.includes(p)) return false;
+      for (let n of negFilters) if (tags.includes(n)) return false;
+      return true;
+    }
+    function computeVisibility(node) {
+      const item = node._item;
+      const isFolder = item.type === 'folder';
+      let selfVisible = matchesFilters(item);
+      let hasVisibleChild = false;
+      const childrenContainer = node.querySelector(':scope > .children');
+      if (childrenContainer) {
+        const childNodes = Array.from(childrenContainer.children).filter(c => c.classList.contains('node'));
+        for (let child of childNodes) if (computeVisibility(child)) hasVisibleChild = true;
+      }
+      let finalVisible = (posFilters.size === 0 && negFilters.size === 0) ? true : (isFolder ? hasVisibleChild : selfVisible);
+      node.style.display = finalVisible ? '' : 'none';
+      return finalVisible;
+    }
+    function applyFilter() {
+      document.querySelectorAll('.col .tree .node').forEach(node => computeVisibility(node));
+    }
+    function updateFilterButtonsUI() {
+      const allBtn = document.querySelector('.filter-all');
+      if (posFilters.size === 0 && negFilters.size === 0) allBtn.classList.add('active');
+      else allBtn.classList.remove('active');
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        const tag = btn.dataset.tag;
+        const type = btn.dataset.filterType;
+        btn.classList.remove('active');
+        if (type === 'pos' && posFilters.has(tag)) btn.classList.add('active');
+        if (type === 'neg' && negFilters.has(tag)) btn.classList.add('active');
+      });
+    }
+    function setupFilters() {
+      filtersContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('.filter-btn');
+        if (btn) {
+          const tag = btn.dataset.tag;
+          const type = btn.dataset.filterType;
+          if (type === 'pos') { if (posFilters.has(tag)) posFilters.delete(tag); else posFilters.add(tag); }
+          else { if (negFilters.has(tag)) negFilters.delete(tag); else negFilters.add(tag); }
+          if (posFilters.has(tag) && negFilters.has(tag)) { posFilters.delete(tag); negFilters.delete(tag); }
+          updateFilterButtonsUI();
+          applyFilter();
+        }
+        const allBtn = e.target.closest('.filter-all');
+        if (allBtn) { posFilters.clear(); negFilters.clear(); updateFilterButtonsUI(); applyFilter(); }
+      });
+    }
+
+    // ---------- Sortable и отступы ----------
+    function initSortable(containerElement) {
+      if (containerElement._sortable) containerElement._sortable.destroy();
+      const sortable = new Sortable(containerElement, {
+        group: { name: 'shared', pull: true, put: true },
+        animation: 150,
+        handle: '.handle',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        onEnd: () => {
+          setTimeout(() => {
+            updateAllDepths();
+            applyFilter();
+            saveStateToLocalStorage();
+          }, 10);
+        }
+      });
+      containerElement._sortable = sortable;
+      let openTimer = null;
+      containerElement.addEventListener('dragover', (e) => {
+        const targetToggle = e.target.closest('.toggle:not(.leaf)');
+        if (!targetToggle) return;
+        const folderNode = targetToggle.closest('.node');
+        if (!folderNode) return;
+        const childrenDiv = folderNode.querySelector('.children');
+        if (!childrenDiv || childrenDiv.classList.contains('open')) return;
+        if (openTimer) clearTimeout(openTimer);
+        openTimer = setTimeout(() => {
+          const toggle = folderNode.querySelector('.toggle');
+          if (toggle && !toggle.classList.contains('open')) {
+            toggle.classList.add('open');
+            toggle.classList.remove('closed');
+            childrenDiv.classList.add('open');
+            updateAllDepths();
+          }
+          openTimer = null;
+        }, 400);
+      });
+      containerElement.addEventListener('dragleave', () => { if (openTimer) clearTimeout(openTimer); });
+      containerElement.addEventListener('drop', () => { if (openTimer) clearTimeout(openTimer); });
+    }
+    function updateDepthsRecursive(node, currentDepth) {
+      if (!node) return;
+      node.style.paddingLeft = `${currentDepth * 20}px`;
+      const childrenContainer = node.querySelector(':scope > .children');
+      if (childrenContainer && childrenContainer.classList.contains('open')) {
+        const childNodes = Array.from(childrenContainer.children).filter(c => c.classList.contains('node'));
+        childNodes.forEach(child => updateDepthsRecursive(child, currentDepth + 1));
+      }
+    }
+    function updateAllDepths() {
+      document.querySelectorAll('.col .tree').forEach(tree => {
+        Array.from(tree.children).forEach(rootNode => {
+          if (rootNode.classList.contains('node')) updateDepthsRecursive(rootNode, 0);
+        });
+      });
+    }
+
+    // Ширина колонок
+    function updateColWidth(percent) {
+      const columns = document.querySelectorAll('.col');
+      const containerWidth = document.querySelector('.columns-container').clientWidth;
+      const availableWidth = containerWidth - 12;
+      const colWidth = Math.max(240, availableWidth * (percent / 100));
+      columns.forEach(col => { col.style.flex = `0 0 ${colWidth}px`; });
+      localStorage.setItem('colWidthPercent', percent);
+    }
+    const savedPercent = localStorage.getItem('colWidthPercent');
+    if (savedPercent) { colWidthSlider.value = savedPercent; colWidthValue.textContent = savedPercent + '%'; setTimeout(() => updateColWidth(parseInt(savedPercent)), 10); }
+    colWidthSlider.addEventListener('input', (e) => { const val = e.target.value; colWidthValue.textContent = val + '%'; updateColWidth(parseInt(val)); });
+    window.addEventListener('resize', () => { const percent = colWidthSlider.value; updateColWidth(parseInt(percent)); });
+
+    // Скрытие сайдбара
+    let sidebarVisible = true;
+    toggleSidebarBtn.addEventListener('click', () => {
+      sidebarVisible = !sidebarVisible;
+      sidebar.classList.toggle('hidden', !sidebarVisible);
+      toggleSidebarBtn.textContent = sidebarVisible ? '◀ Скрыть' : '▶ Показать';
+    });
+
+    // Редактирование описания / названия в сайдбаре
+    selectedTitleInput.addEventListener('input', () => {
+      if (selectedItem) { selectedItem.label = selectedTitleInput.value; if (selectedRowElem) { const textSpan = selectedRowElem.querySelector('.label .text'); if (textSpan) textSpan.textContent = selectedTitleInput.value; const editInputField = selectedRowElem.querySelector('.label input'); if (editInputField) editInputField.value = selectedTitleInput.value; } saveStateToLocalStorage(); }
+    });
+    selectedDescInput.addEventListener('input', () => { if (selectedItem) { selectedItem.description = selectedDescInput.value; saveStateToLocalStorage(); } });
+    deleteBtn.addEventListener('click', () => { if (selectedItem) { deleteConfirmMode = true; updateSidebarForSelection(); } });
+    createFolderBtn.addEventListener('click', () => createItem('folder'));
+    createFileBtn.addEventListener('click', () => createItem('file'));
+    addBtn.addEventListener('click', () => buildColumn('Новая колонка', []));
+
+    // Экспорт / Импорт
+    exportBtn.addEventListener('click', () => {
+      const state = serializeState();
+      const dataStr = JSON.stringify(state, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'workspace_backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+    importBtn.addEventListener('click', () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/json';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const importedState = JSON.parse(ev.target.result);
+            if (importedState && importedState.columns) {
+              rebuildFromState(importedState);
+              saveStateToLocalStorage();
+              clearSelection();
+              applyFilter();
+              updateAllDepths();
+            } else alert('Неверный формат файла');
+          } catch(err) { alert('Ошибка чтения файла'); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    });
+
+    function escapeHtml(str) { if (!str) return ''; return str.replace(/[&<>]/g, function(m) { if (m === '&') return '&amp;'; if (m === '<') return '&lt;'; if (m === '>') return '&gt;'; return m; }); }
+
+    // Старт приложения
+    setupFilters();
+    initApp();
+    document.body.addEventListener('click', (e) => {
+      if (e.target.closest('.toggle')) setTimeout(updateAllDepths, 20);
+      if (!e.target.closest('.row') && !e.target.closest('.sidebar') && !e.target.closest('.col-footer') && !e.target.closest('.col-header') && !e.target.closest('.filters')) { clearSelection(); if (linkingMode) exitLinkingMode(); }
+    });
+  })();
+</script>
+</body>
+</html>
