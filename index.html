@@ -477,13 +477,13 @@
     }
 
     .link-icon {
-      width: 13px;
-      height: 13px;
+      width: 16px;
+      height: 16px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 8px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: bold;
       background: transparent;
       border-radius: 50%;
       transition: background 0.1s, transform 0.1s;
@@ -579,7 +579,7 @@
       justify-content: center;
       background: transparent;
       color: var(--text-secondary);
-      opacity: 0.5;
+      opacity: 0.75;
       transition: opacity 0.1s;
     }
 
@@ -734,8 +734,8 @@
     </div>
   </div>
   <div class="header-actions">
-    <button class="header-btn" id="exportBtn">Скачать</button>
-    <button class="header-btn" id="importBtn">Загрузить</button>
+    <button class="header-btn" id="exportBtn">📥 Скачать</button>
+    <button class="header-btn" id="importBtn">📤 Загрузить</button>
   </div>
 </header>
 
@@ -1014,17 +1014,22 @@
       labelSpan.appendChild(editInput);
       row.appendChild(labelSpan);
 
+      // ----- ИКОНКИ ТЕГОВ (ВАЖНО) -----
       if (!isFolder && item.tags && item.tags.length) {
         const tagsContainer = document.createElement('span');
         tagsContainer.className = 'tags';
-        item.tags.slice().sort((a,b)=>availableTags.indexOf(a)-availableTags.indexOf(b)).forEach(tag => {
+        // Сортируем теги в порядке availableTags для единообразия
+        const sortedTags = [...item.tags].sort((a, b) => availableTags.indexOf(a) - availableTags.indexOf(b));
+        sortedTags.forEach(tag => {
           const span = document.createElement('span');
           span.className = 'tag-icon';
-          span.textContent = tagIconMap[tag];
+          span.textContent = tagIconMap[tag] || '?';
+          span.title = tagDisplayMap[tag]; // подсказка при наведении
           tagsContainer.appendChild(span);
         });
         row.appendChild(tagsContainer);
       }
+
       node.appendChild(row);
 
       function finishLabelEdit() {
@@ -1274,15 +1279,25 @@
       else selectedItem.tags.splice(idx, 1);
       selectedItem.tags.sort((a,b)=>availableTags.indexOf(a)-availableTags.indexOf(b));
       if (selectedRowElem) {
-        const tagsContainer = selectedRowElem.querySelector('.tags');
+        let tagsContainer = selectedRowElem.querySelector('.tags');
+        if (!tagsContainer && selectedItem.tags.length) {
+          tagsContainer = document.createElement('span');
+          tagsContainer.className = 'tags';
+          selectedRowElem.appendChild(tagsContainer);
+        }
         if (tagsContainer) {
           tagsContainer.innerHTML = '';
-          selectedItem.tags.forEach(t => {
-            const span = document.createElement('span');
-            span.className = 'tag-icon';
-            span.textContent = tagIconMap[t];
-            tagsContainer.appendChild(span);
-          });
+          if (selectedItem.tags.length) {
+            selectedItem.tags.forEach(t => {
+              const span = document.createElement('span');
+              span.className = 'tag-icon';
+              span.textContent = tagIconMap[t];
+              span.title = tagDisplayMap[t];
+              tagsContainer.appendChild(span);
+            });
+          } else {
+            tagsContainer.remove();
+          }
         }
       }
       applyFilter();
